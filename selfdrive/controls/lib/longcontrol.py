@@ -5,46 +5,12 @@ from openpilot.selfdrive.controls.lib.drive_helpers import CONTROL_N, apply_dead
 from openpilot.selfdrive.controls.lib.pid import PIDController
 from openpilot.selfdrive.modeld.constants import ModelConstants
 
+from openpilot.selfdrive.frogpilot.frogpilot_variables import params_memory
+
 CONTROL_N_T_IDX = ModelConstants.T_IDXS[:CONTROL_N]
 
 LongCtrlState = car.CarControl.Actuators.LongControlState
 
-
-def long_control_state_trans(CP, active, long_control_state, v_ego,
-                             should_stop, brake_pressed, cruise_standstill, frogpilot_toggles):
-  # Ignore cruise standstill if car has a gas interceptor
-  cruise_standstill = cruise_standstill and not CP.enableGasInterceptor
-  stopping_condition = should_stop
-  starting_condition = (not should_stop and
-                        not cruise_standstill and
-                        not brake_pressed)
-  started_condition = v_ego > frogpilot_toggles.vEgoStarting
-
-  if not active:
-    long_control_state = LongCtrlState.off
-
-  else:
-    if long_control_state == LongCtrlState.off:
-      if not starting_condition:
-        long_control_state = LongCtrlState.stopping
-      else:
-        if starting_condition and CP.startingState:
-          long_control_state = LongCtrlState.starting
-        else:
-          long_control_state = LongCtrlState.pid
-
-    elif long_control_state == LongCtrlState.stopping:
-      if starting_condition and CP.startingState:
-        long_control_state = LongCtrlState.starting
-      elif starting_condition:
-        long_control_state = LongCtrlState.pid
-
-    elif long_control_state in [LongCtrlState.starting, LongCtrlState.pid]:
-      if stopping_condition:
-        long_control_state = LongCtrlState.stopping
-      elif started_condition:
-        long_control_state = LongCtrlState.pid
-  return long_control_state
 
 def long_control_state_trans_old_long(CP, active, long_control_state, v_ego, v_target,
                                       v_target_1sec, brake_pressed, cruise_standstill):
@@ -96,15 +62,57 @@ class LongControl:
     self.v_pid = 0.0
     self.last_output_accel = 0.0
 
+    # FrogPilot variables
+    self.lower_vEgoStarting_count = 0
+
   def reset(self):
     self.pid.reset()
+
+  def long_control_state_trans(self, CP, active, long_control_state, v_ego,
+                               should_stop, brake_pressed, cruise_standstill, frogpilot_toggles):
+    # Ignore cruise standstill if car has a gas interceptor
+    cruise_standstill = cruise_standstill and not CP.enableGasInterceptor
+    stopping_condition = should_stop
+    starting_condition = (not should_stop and
+                          not cruise_standstill and
+                          not brake_pressed)
+    started_condition = v_ego > frogpilot_toggles.vEgoStarting
+    if started_condition and 0.1 > v_ego and active:
+      self.lower_vEgoStarting_count += 1
+      params_memory.put_int_nonblocking("LowerVegoCount", self.lower_vEgoStarting_count)
+
+    if not active:
+      long_control_state = LongCtrlState.off
+
+    else:
+      if long_control_state == LongCtrlState.off:
+        if not starting_condition:
+          long_control_state = LongCtrlState.stopping
+        else:
+          if starting_condition and CP.startingState:
+            long_control_state = LongCtrlState.starting
+          else:
+            long_control_state = LongCtrlState.pid
+
+      elif long_control_state == LongCtrlState.stopping:
+        if starting_condition and CP.startingState:
+          long_control_state = LongCtrlState.starting
+        elif starting_condition:
+          long_control_state = LongCtrlState.pid
+
+      elif long_control_state in [LongCtrlState.starting, LongCtrlState.pid]:
+        if stopping_condition:
+          long_control_state = LongCtrlState.stopping
+        elif started_condition:
+          long_control_state = LongCtrlState.pid
+    return long_control_state
 
   def update(self, active, CS, a_target, should_stop, accel_limits, frogpilot_toggles):
     """Update longitudinal control. This updates the state machine and runs a PID loop"""
     self.pid.neg_limit = accel_limits[0]
     self.pid.pos_limit = accel_limits[1]
 
-    self.long_control_state = long_control_state_trans(self.CP, active, self.long_control_state, CS.vEgo,
+    self.long_control_state = self.long_control_state_trans(self.CP, active, self.long_control_state, CS.vEgo,
                                                        should_stop, CS.brakePressed,
                                                        CS.cruiseState.standstill, frogpilot_toggles)
     if self.long_control_state == LongCtrlState.off:

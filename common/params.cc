@@ -368,6 +368,7 @@ std::unordered_map<std::string, uint32_t> keys = {
     {"LosAngelesDrives", PERSISTENT | FROGPILOT_CONTROLS},
     {"LosAngelesScore", PERSISTENT | FROGPILOT_CONTROLS},
     {"LoudBlindspotAlert", PERSISTENT | FROGPILOT_VISUALS},
+    {"LowerVegoCount", CLEAR_ON_MANAGER_START},
     {"LowVoltageShutdown", PERSISTENT | FROGPILOT_CONTROLS},
     {"ManualUpdateInitiated", CLEAR_ON_MANAGER_START},
     {"MapAcceleration", PERSISTENT | FROGPILOT_CONTROLS},

@@ -585,7 +585,7 @@ class FrogPilotVariables:
     toggle.kiV = [0.5, 0.25, 0.] if toggle.frogsgomoo_tweak else kiV
     toggle.stoppingDecelRate = 0.01 if toggle.frogsgomoo_tweak else stoppingDecelRate
     toggle.vEgoStopping = 0.5 if toggle.frogsgomoo_tweak else vEgoStopping
-    toggle.vEgoStarting = 0.1 if toggle.frogsgomoo_tweak else vEgoStarting
+    toggle.vEgoStarting = 0.01 if toggle.frogsgomoo_tweak else vEgoStarting
 
     toggle.holiday_themes = params.get_bool("HolidayThemes") if tuning_level >= level["HolidayThemes"] else default.get_bool("HolidayThemes")
     toggle.current_holiday_theme = holiday_theme if toggle.holiday_themes else "stock"
