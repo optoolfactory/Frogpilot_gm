@@ -15,6 +15,8 @@ public:
   explicit PedalIcons(QWidget *parent = 0);
   void updateState(const UIScene &scene);
 
+  bool brakeLightOn;
+
 private:
   void paintEvent(QPaintEvent *event) override;
 
@@ -22,7 +24,6 @@ private:
   QPixmap gas_pedal_img;
 
   bool accelerating;
-  bool brakeLightOn;
   bool decelerating;
   bool dynamicPedals;
   bool standstill;

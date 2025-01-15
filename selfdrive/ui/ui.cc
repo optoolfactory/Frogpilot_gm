@@ -328,6 +328,10 @@ static void update_state(UIState *s) {
     scene.lat_accel = liveTorqueParameters.getLatAccelFactorFiltered();
     scene.live_valid = liveTorqueParameters.getLiveValid();
   }
+  if (sm.updated("longitudinalPlan")) {
+    auto longitudinalPlan = sm["longitudinalPlan"].getLongitudinalPlan();
+    scene.brake_lights_on = longitudinalPlan.getShouldStop();
+  }
   if (sm.updated("wideRoadCameraState")) {
     auto cam_state = sm["wideRoadCameraState"].getWideRoadCameraState();
     float scale = (cam_state.getSensor() == cereal::FrameData::ImageSensor::AR0231) ? 6.0f : 1.0f;
@@ -516,7 +520,7 @@ UIState::UIState(QObject *parent) : QObject(parent) {
     "pandaStates", "carParams", "driverMonitoringState", "carState", "liveLocationKalman", "driverStateV2",
     "wideRoadCameraState", "managerState", "navInstruction", "navRoute", "uiPlan", "clocks",
     "carControl", "liveTorqueParameters", "frogpilotCarControl", "frogpilotCarState", "frogpilotDeviceState",
-    "frogpilotNavigation", "frogpilotPlan",
+    "frogpilotNavigation", "frogpilotPlan", "longitudinalPlan",
   });
 
   Params params;
